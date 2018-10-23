@@ -1,21 +1,22 @@
 {
   "name": "@thought2/depp",
-  "version": "1.0.15",
+  "version": "1.0.16",
   "description": "",
   "main": "index.js",
   "directories": {
     "test": "test"
   },
   "dependencies": {
+  },
+  "devDependencies": {
     "bower": "^1.8.4",
     "pulp": "12.3.0",
     "purescript": "0.11.7"
   },
-  "devDependencies": { },
   "scripts": {
-    "postinstall": "bower install --allow-root && pulp build --to output.js"
+    "build": "bower install && pulp build --to dist/output.js"
   },
-
+  "bin" : { "depp" : "node ./dist/output.js" },
   "keywords": [],
   "author": "",
   "license": "ISC"
