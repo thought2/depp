@@ -1,6 +1,6 @@
 {
   "name": "@thought2/depp",
-  "version": "1.0.10",
+  "version": "1.0.12",
   "description": "",
   "main": "index.js",
   "directories": {
@@ -13,9 +13,9 @@
   },
   "devDependencies": { },
   "scripts": {
-    "postinstall": "bower install --allow-root"
+    "postinstall": "bower install --allow-root && pulp build --to output.js"
   },
-
+  "bin" : { "depp" : "./output.js" },
   "keywords": [],
   "author": "",
   "license": "ISC"
