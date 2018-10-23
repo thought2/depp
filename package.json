@@ -1,6 +1,6 @@
 {
   "name": "@thought2/depp",
-  "version": "1.0.20",
+  "version": "1.0.21",
   "description": "",
   "main": "index.js",
   "directories": {
@@ -16,7 +16,7 @@
   "scripts": {
     "build": "bower install && pulp build --to dist/output.js"
   },
-  "bin" : { "depp" : "./dist/run.sh" },
+  "bin" : { "depp" : "./dist/run.js" },
   "keywords": [],
   "author": "",
   "license": "ISC"
