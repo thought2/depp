@@ -14,7 +14,9 @@
     "purescript": "0.11.7"
   },
   "scripts": {
-    "build": "bower install && pulp build --to dist/output.js"
+      "prepublish": "bower install && pulp build --to dist/output.js",
+      "build": "pulp build",
+      "postpublish": "git tag v$(jq '.version' < package.json) && git push --tags"
   },
   "bin" : { "depp" : "./dist/run.js" },
   "keywords": [],
