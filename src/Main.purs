@@ -7,30 +7,42 @@ import Control.Alt ((<|>))
 import Control.Monad.Eff (Eff, kind Effect)
 import Control.Monad.Eff.Console (CONSOLE, error, log)
 import Control.Monad.Eff.Exception (EXCEPTION, try)
-import Control.Monad.Except (runExcept)
+import Control.Monad.Except (runExcept, runExceptT)
 import Control.Monad.Except.Trans (ExceptT(..), except, lift, runExceptT, throwError)
 import Control.Monad.Except.Trans as T
 import Control.Monad.Maybe.Trans (MaybeT(..), runMaybeT)
-import Copy (copy)
-import Data.Array (elem, find, head, (!!))
+import Copy (copy, withTicks)
+import Data.Array (elem, find, fromFoldable, head, mapMaybe, nub, (!!))
 import Data.Bifunctor (lmap, rmap)
 import Data.Either (Either(..), either, note)
 import Data.Enum (enumFromTo)
+import Data.Function.Uncurried (runFn0)
 import Data.Maybe (Maybe(Just, Nothing), maybe)
+import Data.Monoid (guard)
 import Data.Newtype (under, unwrap, wrap)
 import Data.NonEmpty (NonEmpty(..), (:|))
 import Data.String (joinWith)
+import Data.String as Str
 import Data.Symbol (SProxy(..))
 import Data.Traversable (fold, traverse)
 import Data.Typelevel.Undefined (undefined)
 import Debug.Trace (spy)
 import Node.Encoding (Encoding(..))
 import Node.FS (FS)
-import Node.FS.Sync (readFile, readTextFile)
+import Node.FS.Stats (Stats(..))
+import Node.FS.Sync (readFile, readTextFile, stat)
 import Node.Process (PROCESS, argv, cwd, exit, lookupEnv)
 import Pathy (class IsDirOrFile, class IsRelOrAbs, AbsDir, AbsFile, AnyDir, AnyFile, AnyPath, Path, RelFile, file, parseAbsDir, parseRelDir, parseRelFile, posixParser, posixPrinter, printPath, sandboxAny, unsafePrintPath, (</>))
 import Specs (langSpecs)
 
+--------------------------------------------------------------------------------
+-- Constant
+--------------------------------------------------------------------------------
+
+constants :: { maxDepthLevel :: Int }
+constants =
+  { maxDepthLevel : 100
+  }
 
 --------------------------------------------------------------------------------
 -- Input
@@ -120,13 +132,15 @@ run task =
 
 runMain :: Config -> Eff _ (Either Err DependencyGraph)
 runMain (Config { language, directory, main }) =
-  runExceptT $ visit langSpec directory main
+  runExceptT $ visit 0 langSpec directory main
+  <#> case _ of (DependencyGraph xs) -> DependencyGraph (nub xs)
   where
     langSpec = langSpecs language
 
-visit :: LangSpec -> AbsDir -> RelFile -> ExceptT Err (Eff _) DependencyGraph
-visit langSpec baseDir filePathRel = do
-  let LangSpec { parseModuleData, modulePathToFilePath } = langSpec
+visit :: Int -> LangSpec -> AbsDir -> RelFile -> ExceptT Err (Eff _) DependencyGraph
+visit level langSpec baseDir filePathRel = do
+  when (level > constants.maxDepthLevel)
+    (throwError $ ErrMaxDepthLevel constants.maxDepthLevel)
 
   sourceStr <-
       readTextFileErr filePathAbs
@@ -138,15 +152,33 @@ visit langSpec baseDir filePathRel = do
     # note (ErrParseModule filePathAbs sourceStr)
     # except
 
-  let depsHere = DependencyGraph $ map (Dependency modulePath) imports
+  importsToFollow <-
+    traverse (\modulePath -> do
+                 followImport baseDir modulePath (modulePathToFilePath modulePath)
+                 >>= if _ then pure (Just modulePath) else pure Nothing
+             )
+             imports
+    <#> mapMaybe id
+     #  lift
+
+  let depsHere = DependencyGraph $ map (Dependency modulePath) importsToFollow
 
   depsRec <-
-    traverse (modulePathToFilePath >>> visit langSpec baseDir) imports
+    traverse next importsToFollow
 
   pure $ (depsHere <> fold depsRec)
 
   where
     filePathAbs = baseDir </> filePathRel
+
+    LangSpec { parseModuleData, modulePathToFilePath } = langSpec
+
+    next path =
+      visit (level + 1) langSpec baseDir (modulePathToFilePath path)
+
+followImport :: AbsDir -> ModulePath -> RelFile -> Eff _ Boolean
+followImport absDir modulePath relFile =
+  fileExists (absDir </> relFile)
 
 --------------------------------------------------------------------------------
 -- Output
@@ -177,6 +209,8 @@ outputError err =
       copy.errors.parseFilePath path
     ErrParseModule path _ ->
       copy.errors.parseModule (printPath' path)
+    ErrMaxDepthLevel n ->
+      copy.errors.maxDepthLevel (show n)
     ErrUnknown ->
       copy.errors.unknown
 
@@ -204,12 +238,13 @@ getDot (DependencyGraph deps) = SourceStrDot $
   <> "}"
   where
     f (Dependency a b) =
-      modulePathToStr a
-      <> " -- "
-      <> modulePathToStr b
+      withTicks (modulePathToStr b)
+      <> " -> "
+      <> withTicks (modulePathToStr a)
+      <> ";"
 
 modulePathToStr :: ModulePath -> String
-modulePathToStr = undefined
+modulePathToStr (ModulePath xs) = joinWith "." (fromFoldable xs)
 
 printPath' :: forall a b. IsRelOrAbs a => IsDirOrFile b => Path a b -> String
 printPath' path =
@@ -217,6 +252,13 @@ printPath' path =
 
 allLanguages :: Array Language
 allLanguages = enumFromTo bottom top
+
+fileExists :: forall e. AbsFile -> Eff ( fs :: FS | e) Boolean
+fileExists absFile =
+  printPath' absFile
+  # stat
+  # try
+  # map (either (const false) (\(Stats statsObj) -> runFn0 statsObj.isFile))
 
 --------------------------------------------------------------------------------
 -- Main

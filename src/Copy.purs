@@ -14,6 +14,7 @@ copy ::
      , parseDirPath :: String -> String
      , parseFilePath :: String -> String
      , parseModule :: String -> String
+     , maxDepthLevel :: String -> String
      , unknown :: String
      }
   , env ::
@@ -39,6 +40,8 @@ copy =
        withTicks path <> " is not a valid file path."
     , parseModule : \path ->
        "Something is wrong with the module " <> withTicks path <> "."
+    , maxDepthLevel : \n ->
+       "The maximum depth level of " <> n <> " was exceeded."
     , unknown :
       "An unknown error occured."
     }

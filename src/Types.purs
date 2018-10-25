@@ -79,6 +79,15 @@ instance monoidDependencyGraph :: Monoid DependencyGraph where
 
 data Dependency = Dependency ModulePath ModulePath
 
+derive instance genericDependency :: Generic Dependency _
+derive instance genericModulePath :: Generic ModulePath _
+
+instance eqDependency :: Eq Dependency where
+  eq = genericEq
+
+instance eqModulePath :: Eq ModulePath where
+  eq = genericEq
+
 newtype ModulePath = ModulePath (NonEmpty Array String)
 
 newtype ModuleData = ModuleData
@@ -105,6 +114,7 @@ data Err
   | ErrParseDirPath String
   | ErrParseFilePath String
   | ErrParseModule AbsFile SourceStr
+  | ErrMaxDepthLevel Int
   | ErrUnknown
 
 type PathString = String
