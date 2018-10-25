@@ -226,7 +226,7 @@ getDot (DependencyGraph deps) = SourceStrDot $
   "digraph {\n"
   <> "rankdir=LR;\n"
   <> (map f deps # joinWith "\n")
-  <> "}"
+  <> "\n}"
   where
     f (Dependency a b) =
       withTicks (modulePathToStr b)
