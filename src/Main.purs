@@ -1,38 +1,28 @@
 module Main where
 
 import Prelude
-import Types
-
+import Types (Config(..), Dependency(..), DependencyGraph(..), Err(..), LangSpec(..), Language, ModuleData(..), ModulePath(..), Output, Result(..), SourceStr(..), SourceStrDot(..), Task(..))
 import Control.Alt ((<|>))
 import Control.Monad.Eff (Eff, kind Effect)
 import Control.Monad.Eff.Console (CONSOLE, error, log)
 import Control.Monad.Eff.Exception (EXCEPTION, try)
-import Control.Monad.Except (runExcept, runExceptT)
-import Control.Monad.Except.Trans (ExceptT(..), except, lift, runExceptT, throwError)
-import Control.Monad.Except.Trans as T
-import Control.Monad.Maybe.Trans (MaybeT(..), runMaybeT)
+import Control.Monad.Except.Trans (ExceptT, except, lift, runExceptT, throwError)
 import Copy (copy, withTicks)
-import Data.Array (elem, find, fromFoldable, head, mapMaybe, nub, (!!))
-import Data.Bifunctor (lmap, rmap)
+import Data.Array (elem, find, fromFoldable, mapMaybe, nub, (!!))
+import Data.Bifunctor (lmap)
 import Data.Either (Either(..), either, note)
 import Data.Enum (enumFromTo)
 import Data.Function.Uncurried (runFn0)
 import Data.Maybe (Maybe(Just, Nothing), maybe)
-import Data.Monoid (guard)
-import Data.Newtype (under, unwrap, wrap)
-import Data.NonEmpty (NonEmpty(..), (:|))
+import Data.Newtype (unwrap, wrap)
 import Data.String (joinWith)
-import Data.String as Str
-import Data.Symbol (SProxy(..))
 import Data.Traversable (fold, traverse)
-import Data.Typelevel.Undefined (undefined)
-import Debug.Trace (spy)
 import Node.Encoding (Encoding(..))
 import Node.FS (FS)
 import Node.FS.Stats (Stats(..))
-import Node.FS.Sync (readFile, readTextFile, stat)
+import Node.FS.Sync (readTextFile, stat)
 import Node.Process (PROCESS, argv, cwd, exit, lookupEnv)
-import Pathy (class IsDirOrFile, class IsRelOrAbs, AbsDir, AbsFile, AnyDir, AnyFile, AnyPath, Path, RelFile, file, parseAbsDir, parseRelDir, parseRelFile, posixParser, posixPrinter, printPath, sandboxAny, unsafePrintPath, (</>))
+import Pathy (class IsDirOrFile, class IsRelOrAbs, AbsDir, AbsFile, Path, RelFile, parseAbsDir, parseRelDir, parseRelFile, posixParser, posixPrinter, sandboxAny, unsafePrintPath, (</>))
 import Specs (langSpecs)
 
 --------------------------------------------------------------------------------
@@ -75,12 +65,12 @@ getTask = do
         <#> (_ >>= parseAnyDirErr cwd')
          #  wrap
 
-      main <-
+      main' <-
         envLookupErr "MAIN"
         <#> (_ >>= parseAnyFileErr)
          #  wrap
 
-      pure $ TaskMain (Config { language, directory, main })
+      pure $ TaskMain (Config { language, directory, main : main' })
 
 parseArgs :: Array String -> Either Err Boolean
 parseArgs xs =
@@ -123,21 +113,21 @@ parseAnyFileErr str =
 -- Run
 --------------------------------------------------------------------------------
 
-run :: Either Err Task -> Eff _ Result
+run :: forall e. Either Err Task -> Eff ( fs :: FS | e) Result
 run task =
   case task of
     Right TaskHelp -> pure $ ResultHelp
     Right (TaskMain config) -> runMain config # map (either ResultErr ResultMain)
     Left err -> pure $ ResultErr err
 
-runMain :: Config -> Eff _ (Either Err DependencyGraph)
+runMain :: forall e. Config -> Eff ( fs :: FS | e) (Either Err DependencyGraph)
 runMain (Config { language, directory, main }) =
   runExceptT $ visit 0 langSpec directory main
   <#> case _ of (DependencyGraph xs) -> DependencyGraph (nub xs)
   where
     langSpec = langSpecs language
 
-visit :: Int -> LangSpec -> AbsDir -> RelFile -> ExceptT Err (Eff _) DependencyGraph
+visit :: forall e. Int -> LangSpec -> AbsDir -> RelFile -> ExceptT Err (Eff ( fs :: FS | e)) DependencyGraph
 visit level langSpec baseDir filePathRel = do
   when (level > constants.maxDepthLevel)
     (throwError $ ErrMaxDepthLevel constants.maxDepthLevel)
@@ -176,7 +166,7 @@ visit level langSpec baseDir filePathRel = do
     next path =
       visit (level + 1) langSpec baseDir (modulePathToFilePath path)
 
-followImport :: AbsDir -> ModulePath -> RelFile -> Eff _ Boolean
+followImport :: forall e. AbsDir -> ModulePath -> RelFile -> Eff (fs :: FS | e) Boolean
 followImport absDir modulePath relFile =
   fileExists (absDir </> relFile)
 
@@ -234,6 +224,7 @@ handleOutput output =
 getDot :: DependencyGraph -> SourceStrDot
 getDot (DependencyGraph deps) = SourceStrDot $
   "digraph {\n"
+  <> "rankdir=LR;\n"
   <> (map f deps # joinWith "\n")
   <> "}"
   where

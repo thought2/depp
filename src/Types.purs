@@ -67,26 +67,15 @@ type Output = Either String String
 -- MAIN
 --------------------------------------------------------------------------------
 
-newtype DependencyGraph = DependencyGraph (Array Dependency)
-
 derive instance newtypeDependencyGraph :: Newtype DependencyGraph _
-
-instance semigroupDependencyGraph :: Semigroup DependencyGraph where
-  append = over2 wrap append
-
-instance monoidDependencyGraph :: Monoid DependencyGraph where
-  mempty = wrap []
-
-data Dependency = Dependency ModulePath ModulePath
-
 derive instance genericDependency :: Generic Dependency _
 derive instance genericModulePath :: Generic ModulePath _
+derive instance newtypeLangSpec :: Newtype LangSpec _
+derive instance genericLanguage :: Generic Language _
 
-instance eqDependency :: Eq Dependency where
-  eq = genericEq
+newtype DependencyGraph = DependencyGraph (Array Dependency)
 
-instance eqModulePath :: Eq ModulePath where
-  eq = genericEq
+data Dependency = Dependency ModulePath ModulePath
 
 newtype ModulePath = ModulePath (NonEmpty Array String)
 
@@ -100,8 +89,6 @@ newtype LangSpec = LangSpec
   , modulePathToFilePath :: ModulePath -> RelFile
   , parseModuleData :: RelFile -> SourceStr -> Maybe ModuleData
   }
-
-derive instance newtypeLangSpec :: Newtype LangSpec _
 
 newtype SourceStr = SourceStr String
 
@@ -119,9 +106,13 @@ data Err
 
 type PathString = String
 
-data Language = Elm | Bla
+data Language = Elm
 
-derive instance genericLanguage :: Generic Language _
+instance eqDependency :: Eq Dependency where
+  eq = genericEq
+
+instance eqModulePath :: Eq ModulePath where
+  eq = genericEq
 
 instance showLanguage :: Show Language where
   show = genericShow
@@ -139,3 +130,9 @@ instance ordLanguage :: Ord Language where
 instance boundedLanguage :: Bounded Language where
   bottom = genericBottom
   top = genericTop
+
+instance semigroupDependencyGraph :: Semigroup DependencyGraph where
+  append = over2 wrap append
+
+instance monoidDependencyGraph :: Monoid DependencyGraph where
+  mempty = wrap []

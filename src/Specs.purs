@@ -1,29 +1,19 @@
 module Specs where
 
-import Prelude
-import Types
-
+import Prelude hiding (between)
+import Types (LangSpec(..), Language(..), ModuleData(..), ModulePath(..), SourceStr(..))
 import Control.Alt ((<|>))
-import Control.Monad.List.Trans (unfold)
 import Data.Array (fromFoldable, mapMaybe)
-import Data.Either (Either(..), either)
-import Data.Foldable (class Foldable)
-import Data.List (List, stripPrefix, toUnfoldable, (:))
+import Data.Either (either)
+import Data.List ((:))
 import Data.Maybe (Maybe(..), fromJust)
-import Data.NonEmpty (NonEmpty(..), (:|))
+import Data.NonEmpty (NonEmpty(NonEmpty))
 import Data.String (Pattern(..), fromCharArray, joinWith, split)
-import Data.String.Regex (regex)
-import Data.String.Regex.Flags (noFlags)
-import Data.String.Regex.Unsafe (unsafeRegex)
-import Data.Typelevel.Undefined (undefined)
-import Data.Unfoldable (unfoldr)
-import Debug.Trace (spy)
 import Partial.Unsafe (unsafePartial)
-import Pathy (RelFile, file, parseRelFile, posixParser)
-import Text.Parsing.StringParser (Parser(..), runParser)
-import Text.Parsing.StringParser.Combinators (between, lookAhead, many, optionMaybe, sepBy, sepBy1)
-import Text.Parsing.StringParser.String (alphaNum, anyChar, char, noneOf, string, upperCaseChar, whiteSpace)
-import Type.Prelude (SProxy(..))
+import Pathy (RelFile, parseRelFile, posixParser)
+import Text.Parsing.StringParser (Parser, runParser)
+import Text.Parsing.StringParser.Combinators (between, many, sepBy1)
+import Text.Parsing.StringParser.String (alphaNum, char, noneOf, string, upperCaseChar, whiteSpace)
 
 
 langSpecs :: Language -> LangSpec
@@ -31,11 +21,6 @@ langSpecs lang =
   case lang of
     Elm -> LangSpec
       { id : "elm"
-      , modulePathToFilePath : elmModulePathToFilePath
-      , parseModuleData : elmParseModuleData
-      }
-    Bla -> LangSpec
-      { id : "bla"
       , modulePathToFilePath : elmModulePathToFilePath
       , parseModuleData : elmParseModuleData
       }
@@ -64,11 +49,15 @@ parseModulePath =
 
 parseModuleStmt :: Parser ModulePath
 parseModuleStmt =
-  between ((string "module" <|> string "port module") <> whiteSpace) whiteSpace parseModulePath
+  between ((string "module" <|> string "port module") <> whiteSpace)
+    whiteSpace
+    parseModulePath
 
 parseImportStmt :: Parser ModulePath
 parseImportStmt =
-  between (string "import" <> whiteSpace) (many (noneOf ['\n'])) parseModulePath
+  between (string "import" <> whiteSpace)
+    (many (noneOf ['\n']))
+    parseModulePath
 
 parseImports :: SourceStr -> Array ModulePath
 parseImports (SourceStr str) =

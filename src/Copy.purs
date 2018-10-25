@@ -1,10 +1,8 @@
 module Copy where
 
-import Types
-
 import Data.Monoid ((<>))
 import Data.String (joinWith)
-import Data.Typelevel.Undefined (undefined)
+
 
 copy ::
   { errors ::
