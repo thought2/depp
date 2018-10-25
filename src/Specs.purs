@@ -82,4 +82,6 @@ elmParseModuleData _ sourceStr@(SourceStr str) = do
 --------------------------------------------------------------------------------
 
 sepBy1' :: forall a sep. Parser a -> Parser sep -> Parser (NonEmpty Array a)
-sepBy1' p sep = sepBy1 p sep <#> (unsafePartial (\(x : xs) -> NonEmpty x (fromFoldable xs)))
+sepBy1' p sep =
+  sepBy1 p sep
+  <#> (unsafePartial (\(x : xs) -> NonEmpty x (fromFoldable xs)))

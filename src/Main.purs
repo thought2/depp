@@ -88,7 +88,8 @@ readTextFileErr absFilePath =
    #  try
   <#> lmap (const $ ErrReadTextFile absFilePath)
 
-envLookupErr :: forall e. String -> Eff ( process :: PROCESS | e ) (Either Err String)
+envLookupErr :: forall e. String -> Eff ( process :: PROCESS | e )
+                                        (Either Err String)
 envLookupErr env =
   lookupEnv env
   <#> note (ErrEnvLookup env)
@@ -116,9 +117,13 @@ parseAnyFileErr str =
 run :: forall e. Either Err Task -> Eff ( fs :: FS | e) Result
 run task =
   case task of
-    Right TaskHelp -> pure $ ResultHelp
-    Right (TaskMain config) -> runMain config # map (either ResultErr ResultMain)
-    Left err -> pure $ ResultErr err
+    Right TaskHelp ->
+      pure $ ResultHelp
+    Right (TaskMain config) ->
+      runMain config
+      # map (either ResultErr ResultMain)
+    Left err ->
+      pure $ ResultErr err
 
 runMain :: forall e. Config -> Eff ( fs :: FS | e) (Either Err DependencyGraph)
 runMain (Config { language, directory, main }) =
@@ -127,7 +132,12 @@ runMain (Config { language, directory, main }) =
   where
     langSpec = langSpecs language
 
-visit :: forall e. Int -> LangSpec -> AbsDir -> RelFile -> ExceptT Err (Eff ( fs :: FS | e)) DependencyGraph
+visit :: forall e.
+         Int
+         -> LangSpec
+         -> AbsDir
+         -> RelFile
+         -> ExceptT Err (Eff ( fs :: FS | e)) DependencyGraph
 visit level langSpec baseDir filePathRel = do
   when (level > constants.maxDepthLevel)
     (throwError $ ErrMaxDepthLevel constants.maxDepthLevel)
@@ -166,7 +176,11 @@ visit level langSpec baseDir filePathRel = do
     next path =
       visit (level + 1) langSpec baseDir (modulePathToFilePath path)
 
-followImport :: forall e. AbsDir -> ModulePath -> RelFile -> Eff (fs :: FS | e) Boolean
+followImport :: forall e.
+                AbsDir
+                -> ModulePath
+                -> RelFile
+                -> Eff (fs :: FS | e) Boolean
 followImport absDir modulePath relFile =
   fileExists (absDir </> relFile)
 
@@ -192,7 +206,9 @@ outputError err =
     ErrEnvLookup env ->
       copy.errors.envLookup env
     ErrParseLang lang ->
-      copy.errors.parseLang lang (map (langSpecs >>> unwrap >>> _.id) allLanguages)
+      copy.errors.parseLang lang ( map (langSpecs >>> unwrap >>> _.id)
+                                   allLanguages
+                                 )
     ErrParseDirPath path ->
       copy.errors.parseDirPath path
     ErrParseFilePath path ->
@@ -211,7 +227,11 @@ outputHelp = copy.help.title
 -- Util
 --------------------------------------------------------------------------------
 
-handleOutput :: forall e. Output -> Eff ( console :: CONSOLE, process :: PROCESS | e) Unit
+handleOutput :: forall e. Output -> Eff ( console :: CONSOLE
+                                        , process :: PROCESS
+                                        | e
+                                        )
+                                        Unit
 handleOutput output =
   case output of
     Left str -> do
@@ -255,7 +275,12 @@ fileExists absFile =
 -- Main
 --------------------------------------------------------------------------------
 
-main :: forall e. Eff (console :: CONSOLE, process :: PROCESS, fs :: FS, exception :: EXCEPTION | e) Unit
+main :: forall e. Eff ( console :: CONSOLE
+                      , process :: PROCESS
+                      , fs :: FS, exception :: EXCEPTION
+                      | e
+                      )
+                      Unit
 main = do
   task <- runExceptT $ getTask
   result <- run task
