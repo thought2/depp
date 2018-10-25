@@ -18,31 +18,6 @@ import Data.Tuple.Nested (over1)
 import Pathy (AbsDir, AnyFile, RelFile, AbsFile)
 
 --------------------------------------------------------------------------------
--- Input
---------------------------------------------------------------------------------
-
-type Input =
-  { env :: EnvVars
-  , flags :: Flags
-  }
-
-type EnvVars =
-  { lang :: InputData
-  , dir :: InputData
-  , main :: InputData
-  }
-
-type Flags =
-  { help :: InputData
-  }
-
-type InputData =
-  { name :: String
-  , description :: String
-  , type_ :: String
-  }
-
---------------------------------------------------------------------------------
 -- Lifecycle
 --------------------------------------------------------------------------------
 

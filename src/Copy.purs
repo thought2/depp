@@ -49,7 +49,9 @@ copy =
     , main : "The entry point of the dependency graph. Relative path to $DIR."
     }
   , help :
-    { title : "Provide the following environment variables"
+    { title :
+      "Provide the following environment variables:\n"
+      <> "LANGUAGE, DIR, MAIN"
     }
   }
 
