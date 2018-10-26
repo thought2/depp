@@ -22,6 +22,7 @@ copy ::
      }
   , help ::
      { title :: String
+     , envVars :: Array String
      }
 }
 copy =
@@ -50,8 +51,12 @@ copy =
     }
   , help :
     { title :
-      "Provide the following environment variables:\n"
-      <> "LANGUAGE, DIR, MAIN"
+      "Provide the following environment variables:"
+    , envVars:
+      [ "DIR: path to the source directory"
+      , "LANGUAGE: programming language of the project"
+      , "MAIN: relative path to entry point"
+      ]
     }
   }
 
@@ -64,3 +69,6 @@ withTicks inner = "\"" <> inner <> "\""
 
 sepByComma :: Array String -> String
 sepByComma = joinWith ", "
+
+nl :: String
+nl = "\n"

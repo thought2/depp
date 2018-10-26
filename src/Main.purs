@@ -1,13 +1,13 @@
 module Main where
 
 import Prelude
-import Types (Config(..), Dependency(..), DependencyGraph(..), Err(..), LangSpec(..), Language, ModuleData(..), ModulePath(..), Output, Result(..), SourceStr(..), SourceStrDot(..), Task(..))
+
 import Control.Alt ((<|>))
 import Control.Monad.Eff (Eff, kind Effect)
 import Control.Monad.Eff.Console (CONSOLE, error, log)
 import Control.Monad.Eff.Exception (EXCEPTION, try)
 import Control.Monad.Except.Trans (ExceptT, except, lift, runExceptT, throwError)
-import Copy (copy, withTicks)
+import Copy (copy, nl, withTicks)
 import Data.Array (elem, find, fromFoldable, mapMaybe, nub, (!!))
 import Data.Bifunctor (lmap)
 import Data.Either (Either(..), either, note)
@@ -24,6 +24,7 @@ import Node.FS.Sync (readTextFile, stat)
 import Node.Process (PROCESS, argv, cwd, exit, lookupEnv)
 import Pathy (class IsDirOrFile, class IsRelOrAbs, AbsDir, AbsFile, Path, RelFile, parseAbsDir, parseRelDir, parseRelFile, posixParser, posixPrinter, sandboxAny, unsafePrintPath, (</>))
 import Specs (langSpecs)
+import Types (Config(..), Dependency(..), DependencyGraph(..), Err(..), LangSpec(..), Language, ModuleData(..), ModulePath(..), Output, Result(..), SourceStr(..), SourceStrDot(..), Task(..))
 
 --------------------------------------------------------------------------------
 -- Constant
@@ -221,7 +222,10 @@ outputError err =
       copy.errors.unknown
 
 outputHelp :: String
-outputHelp = copy.help.title
+outputHelp =
+  copy.help.title
+  <> nl
+  <> joinWith nl copy.help.envVars
 
 --------------------------------------------------------------------------------
 -- Util
