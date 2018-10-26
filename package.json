@@ -14,8 +14,7 @@
   },
   "scripts": {
     "prepublish": "bower install && pulp build --to dist/output.js",
-    "build": "pulp build",
-    "postpublish": "git tag v$(jq '.version' < package.json) && git push --tags"
+    "build": "pulp build"
   },
   "bin": {
     "depp": "./dist/run.js"
