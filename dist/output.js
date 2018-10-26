@@ -1919,6 +1919,7 @@ var PS = {};
       return "\"" + (inner + "\"");
   };
   var sepByComma = Data_String.joinWith(", ");
+  var nl = "\x0a";
   var copy = {
       errors: {
           readTextFile: function (path) {
@@ -1952,12 +1953,14 @@ var PS = {};
           main: "The entry point of the dependency graph. Relative path to $DIR."
       },
       help: {
-          title: "Provide the following environment variables:\x0a" + "LANGUAGE, DIR, MAIN"
+          title: "Provide the following environment variables:",
+          envVars: [ "DIR: path to the source directory", "LANGUAGE: programming language of the project", "MAIN: relative path to entry point" ]
       }
   };
   exports["copy"] = copy;
   exports["withTicks"] = withTicks;
   exports["sepByComma"] = sepByComma;
+  exports["nl"] = nl;
 })(PS["Copy"] = PS["Copy"] || {});
 (function(exports) {
     "use strict";
@@ -4536,7 +4539,7 @@ var PS = {};
           })));
       };
   };
-  var outputHelp = Copy.copy.help.title;
+  var outputHelp = Copy.copy.help.title + (Copy.nl + Data_String.joinWith(Copy.nl)(Copy.copy.help.envVars));
   var modulePathToStr = function (v) {
       return Data_String.joinWith(".")(Data_Array.fromFoldable(Data_NonEmpty.foldableNonEmpty(Data_Foldable.foldableArray))(v));
   };
@@ -4553,7 +4556,7 @@ var PS = {};
               return Node_Process.exit(0)();
           };
       };
-      throw new Error("Failed pattern match at Main line 236, column 3 - line 244, column 1: " + [ output1.constructor.name ]);
+      throw new Error("Failed pattern match at Main line 240, column 3 - line 248, column 1: " + [ output1.constructor.name ]);
   };
   var getDot = function (v) {
       var f = function (v1) {
@@ -4627,7 +4630,7 @@ var PS = {};
       if (task instanceof Data_Either.Left) {
           return Control_Applicative.pure(Control_Monad_Eff.applicativeEff)(new Types.ResultErr(task.value0));
       };
-      throw new Error("Failed pattern match at Main line 119, column 3 - line 126, column 27: " + [ task.constructor.name ]);
+      throw new Error("Failed pattern match at Main line 120, column 3 - line 127, column 27: " + [ task.constructor.name ]);
   };
   var allLanguages = Data_Enum.enumFromTo(Types.enumLanguage)(Data_Unfoldable.unfoldableArray)(Data_Bounded.bottom(Types.boundedLanguage))(Data_Bounded.top(Types.boundedLanguage));
   var outputError = function (err) {
@@ -4659,7 +4662,7 @@ var PS = {};
       if (err instanceof Types.ErrUnknown) {
           return Copy.copy.errors.unknown;
       };
-      throw new Error("Failed pattern match at Main line 203, column 3 - line 221, column 26: " + [ err.constructor.name ]);
+      throw new Error("Failed pattern match at Main line 204, column 3 - line 222, column 26: " + [ err.constructor.name ]);
   };
   var output = function (result) {
       if (result instanceof Types.ResultHelp) {
@@ -4672,7 +4675,7 @@ var PS = {};
       if (result instanceof Types.ResultErr) {
           return Data_Either.Left.create(outputError(result.value0));
       };
-      throw new Error("Failed pattern match at Main line 193, column 3 - line 199, column 29: " + [ result.constructor.name ]);
+      throw new Error("Failed pattern match at Main line 194, column 3 - line 200, column 29: " + [ result.constructor.name ]);
   };
   var parseLangErr = function (str) {
       return Data_Either.note(new Types.ErrParseLang(str))(Data_Foldable.find(Data_Foldable.foldableArray)(function ($83) {
