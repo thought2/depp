@@ -1,24 +1,25 @@
 {
   "name": "@thought2/depp",
-  "version": "1.0.25",
+  "version": "1.0.26",
   "description": "",
   "main": "index.js",
   "directories": {
     "test": "test"
   },
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
     "bower": "^1.8.4",
     "pulp": "12.3.0",
     "purescript": "0.11.7"
   },
   "scripts": {
-      "prepublish": "bower install && pulp build --to dist/output.js",
-      "build": "pulp build",
-      "postpublish": "git tag v$(jq '.version' < package.json) && git push --tags"
+    "prepublish": "bower install && pulp build --to dist/output.js",
+    "build": "pulp build",
+    "postpublish": "git tag v$(jq '.version' < package.json) && git push --tags"
   },
-  "bin" : { "depp" : "./dist/run.js" },
+  "bin": {
+    "depp": "./dist/run.js"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC"
